@@ -155,12 +155,17 @@ function startWatchingForValueChange(target, targetID) {
   activeElement = target;
   activeElementID = targetID;
   activeElementValue = target.value;
-  activeElementValueProp = Object.getOwnPropertyDescriptor(
-    target.constructor.prototype,
-    'value'
-  );
+  // Because IE < 8 doesn't support getOwnPropertyDescriptor and there are no 
+  // shims, disregard it if not available to prevent errors thrown
+  if(typeof target.constructor !== 'undefined') {
+    activeElementValueProp = Object.getOwnPropertyDescriptor(
+      target.constructor.prototype,
+      'value'
+    );
 
-  Object.defineProperty(activeElement, 'value', newValueProp);
+    Object.defineProperty(activeElement, 'value', newValueProp);
+  }
+
   activeElement.attachEvent('onpropertychange', handlePropertyChange);
 }
 
@@ -173,8 +178,11 @@ function stopWatchingForValueChange() {
     return;
   }
 
-  // delete restores the original property definition
-  delete activeElement.value;
+  // delete restores the original property definition, but only apply it if value
+  // has been overridden
+  if(typeof activeElement.constructor !== 'undefined') {
+    delete activeElement.value;
+  }
   activeElement.detachEvent('onpropertychange', handlePropertyChange);
 
   activeElement = null;
